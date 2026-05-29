@@ -1,0 +1,103 @@
+[
+  {
+    "id": "post_kyoto_alley",
+    "userId": "user_sarah",
+    "username": "traveler_sarah",
+    "fullname": "Sarah Jenkins",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "type": "post",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&fit=crop",
+      "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&fit=crop"
+    ],
+    "caption": "Chasing sunsets through the historic streets of Kyoto. Unbelievable details around every corner! 🎋⛩️ #kyoto #japan #traveler #vibes",
+    "hashtags": [
+      "kyoto",
+      "japan",
+      "traveler",
+      "vibes"
+    ],
+    "taggedUsers": [
+      "pulse"
+    ],
+    "likes": [
+      "user_pulse_official",
+      "user_marco"
+    ],
+    "commentsCount": 2,
+    "createdAt": "2026-05-28T04:44:24.228Z"
+  },
+  {
+    "id": "post_ramen_bowl",
+    "userId": "user_marco",
+    "username": "chef_marco",
+    "fullname": "Marco Rossi",
+    "userAvatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "type": "post",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&fit=crop"
+    ],
+    "caption": "Signature 36-hour spicy tonkotsu broth, hand-rolled noodles, and slow-braised chashu. Perfect recipe for rainy Mondays! 🍜🔥 #chef_cook #ramen #comfortfood",
+    "hashtags": [
+      "chef_cook",
+      "ramen",
+      "comfortfood"
+    ],
+    "taggedUsers": [
+      "traveler_sarah"
+    ],
+    "likes": [
+      "user_sarah"
+    ],
+    "commentsCount": 1,
+    "createdAt": "2026-05-28T06:44:24.228Z"
+  },
+  {
+    "id": "reel_cooking",
+    "userId": "user_marco",
+    "username": "chef_marco",
+    "fullname": "Marco Rossi",
+    "userAvatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "type": "reel",
+    "mediaUrls": [
+      "https://assets.mixkit.co/videos/preview/mixkit-kitchen-chef-preparing-a-fresh-vegetable-salad-41484-large.mp4"
+    ],
+    "caption": "Art of salad plating. Crisp greens, zesty orange glaze, and sunflower seeds. Let organic cooking set your mood! 🌱🥗 #chefskills #reels #healthy",
+    "hashtags": [
+      "chefskills",
+      "reels",
+      "healthy"
+    ],
+    "taggedUsers": [],
+    "likes": [
+      "user_pulse_official",
+      "user_sarah"
+    ],
+    "commentsCount": 1,
+    "createdAt": "2026-05-27T20:44:24.228Z"
+  },
+  {
+    "id": "reel_sunset_kyoto",
+    "userId": "user_sarah",
+    "username": "traveler_sarah",
+    "fullname": "Sarah Jenkins",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "type": "reel",
+    "mediaUrls": [
+      "https://assets.mixkit.co/videos/preview/mixkit-waterfall-in-forest-2213-large.mp4"
+    ],
+    "caption": "A secret waterfall hidden deep in the hills of Honshu. Listen to that gentle rhythm. 🌲🍃✨ #zen #waterfall #reels #hike",
+    "hashtags": [
+      "zen",
+      "waterfall",
+      "reels",
+      "hike"
+    ],
+    "taggedUsers": [],
+    "likes": [
+      "user_marco"
+    ],
+    "commentsCount": 1,
+    "createdAt": "2026-05-28T03:44:24.228Z"
+  }
+]

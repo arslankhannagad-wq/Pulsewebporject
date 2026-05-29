@@ -1,0 +1,78 @@
+[
+  {
+    "id": "user_pulse_official",
+    "username": "pulse",
+    "email": "info@pulse.app",
+    "fullname": "Pulse Official",
+    "avatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop",
+    "bio": "The beat of social discovery. Experience Pulse – a modern dark social network for creators. ⚡",
+    "followers": [
+      "user_sarah",
+      "user_marco"
+    ],
+    "following": [
+      "user_sarah"
+    ],
+    "savedPosts": [],
+    "isVerified": true,
+    "role": "admin",
+    "createdAt": "2026-05-28T08:44:24.225Z",
+    "password": "$2b$10$KFCMY9zOv0th7HEiCzlBmOk3bctF9rGJmeBrgz//w9Z7jE4kk5KGy"
+  },
+  {
+    "id": "user_sarah",
+    "username": "traveler_sarah",
+    "email": "sarah@travel.com",
+    "fullname": "Sarah Jenkins",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "bio": "Wanderlust explorer. Currently capturing the alleys of Kyoto, Japan. 🗺️📸",
+    "followers": [
+      "user_pulse_official",
+      "user_marco"
+    ],
+    "following": [
+      "user_pulse_official",
+      "user_marco"
+    ],
+    "savedPosts": [],
+    "isVerified": true,
+    "role": "user",
+    "createdAt": "2026-05-28T08:44:24.226Z",
+    "password": "$2b$10$KFCMY9zOv0th7HEiCzlBmOk3bctF9rGJmeBrgz//w9Z7jE4kk5KGy"
+  },
+  {
+    "id": "user_marco",
+    "username": "chef_marco",
+    "email": "marco@kitchen.com",
+    "fullname": "Marco Rossi",
+    "avatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "bio": "Searing up artisanal flavors since 2018. Cooking with fire! 🔥🍝",
+    "followers": [
+      "user_sarah"
+    ],
+    "following": [
+      "user_pulse_official",
+      "user_sarah"
+    ],
+    "savedPosts": [],
+    "isVerified": false,
+    "role": "user",
+    "createdAt": "2026-05-28T08:44:24.226Z",
+    "password": "$2b$10$KFCMY9zOv0th7HEiCzlBmOk3bctF9rGJmeBrgz//w9Z7jE4kk5KGy"
+  },
+  {
+    "id": "user_admin",
+    "username": "admin",
+    "email": "admin@pulse.app",
+    "fullname": "Pulse Admin Staff",
+    "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop",
+    "bio": "Administration and safety enforcement team.",
+    "followers": [],
+    "following": [],
+    "savedPosts": [],
+    "isVerified": true,
+    "role": "admin",
+    "createdAt": "2026-05-28T08:44:24.226Z",
+    "password": "$2b$10$KFCMY9zOv0th7HEiCzlBmOk3bctF9rGJmeBrgz//w9Z7jE4kk5KGy"
+  }
+]

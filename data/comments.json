@@ -1,0 +1,47 @@
+[
+  {
+    "id": "comment_1",
+    "postId": "post_kyoto_alley",
+    "userId": "user_pulse_official",
+    "username": "pulse",
+    "userAvatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop",
+    "content": "This image capture defines tranquility. Keep the adventure coming!",
+    "createdAt": "2026-05-28T05:44:24.229Z"
+  },
+  {
+    "id": "comment_2",
+    "postId": "post_kyoto_alley",
+    "userId": "user_marco",
+    "username": "chef_marco",
+    "userAvatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "content": "Absolutely beautiful! Did you try the hand-rolled noodles there?",
+    "createdAt": "2026-05-28T06:44:24.229Z"
+  },
+  {
+    "id": "comment_3",
+    "postId": "post_ramen_bowl",
+    "userId": "user_sarah",
+    "username": "traveler_sarah",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "content": "Oh this looks to die for! I need the address ASAP. 🤤🍜",
+    "createdAt": "2026-05-28T07:14:24.229Z"
+  },
+  {
+    "id": "comment_reel_1",
+    "postId": "reel_cooking",
+    "userId": "user_sarah",
+    "username": "traveler_sarah",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "content": "Plating is absolute masterclass, Marco!",
+    "createdAt": "2026-05-28T00:44:24.229Z"
+  },
+  {
+    "id": "comment_reel_2",
+    "postId": "reel_sunset_kyoto",
+    "userId": "user_marco",
+    "username": "chef_marco",
+    "userAvatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "content": "So refreshing to look at. Incredible spot!",
+    "createdAt": "2026-05-28T04:44:24.229Z"
+  }
+]

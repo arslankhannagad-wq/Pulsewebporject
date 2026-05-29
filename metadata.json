@@ -1,0 +1,6 @@
+{
+  "name": "Pulse",
+  "description": "A premium, modern dark-themed full-stack social media web application styled like Instagram with real-time messaging, stories, reels, and feeds.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

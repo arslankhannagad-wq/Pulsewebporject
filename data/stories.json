@@ -1,0 +1,22 @@
+[
+  {
+    "id": "story1",
+    "userId": "user_sarah",
+    "username": "traveler_sarah",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+    "mediaUrl": "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=600&fit=crop",
+    "viewers": [],
+    "createdAt": "2026-05-28T08:44:24.232Z",
+    "expiresAt": "2026-05-29T08:44:24.232Z"
+  },
+  {
+    "id": "story2",
+    "userId": "user_marco",
+    "username": "chef_marco",
+    "userAvatar": "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&h=150&fit=crop",
+    "mediaUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&fit=crop",
+    "viewers": [],
+    "createdAt": "2026-05-28T08:44:24.232Z",
+    "expiresAt": "2026-05-29T08:44:24.232Z"
+  }
+]
