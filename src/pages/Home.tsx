@@ -141,7 +141,7 @@ export default function Home() {
       {/* Central content frame */}
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8 p-4 md:p-8 md:pl-[272px]">
         {/* Main Feed panel */}
-        <main className="lg:col-span-2 space-y-6">
+        <main className="lg:col-span-2 min-w-0 space-y-6">
           {/* Stories bar components wrapper */}
           <StorySection />
 

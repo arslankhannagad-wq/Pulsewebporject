@@ -146,7 +146,7 @@ export default function StorySection() {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0 overflow-hidden">
       {/* Circle list container */}
       <div className="flex items-center gap-4 py-4 px-2 overflow-x-auto no-scrollbar border-b border-zinc-900 bg-black">
         {/* Your story creator trigger block */}
