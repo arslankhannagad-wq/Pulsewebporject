@@ -816,9 +816,9 @@ async function initServer() {
       const showIds = [selfId, ...followingList];
 
       const allPosts = await db.posts.find();
-      // Filter primarily for 'post' type, sort descending by date
+      // Filter for 'post' type from self + followed users, sort descending by date
       const feedPosts = allPosts
-        .filter(p => p.type === 'post')
+        .filter(p => p.type === 'post' && showIds.includes(p.userId))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       res.json(feedPosts);

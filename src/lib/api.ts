@@ -21,18 +21,26 @@ export async function apiFetch<T = any>(endpoint: string, options: FetchOptions 
     finalBody = JSON.stringify(options.body);
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    body: finalBody,
-    headers,
-  } as RequestInit);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      body: finalBody,
+      headers,
+      signal: controller.signal,
+    } as RequestInit);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json() as Promise<T>;
 }
 
 export function isVideoUrl(url: string | undefined): boolean {

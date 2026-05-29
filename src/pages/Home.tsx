@@ -34,6 +34,7 @@ export default function Home() {
       setPosts(data);
     } catch (err: any) {
       console.error('Error fetching feed:', err);
+      showToast(err.message || 'Failed to load feed', 'error');
     } finally {
       setLoading(false);
     }

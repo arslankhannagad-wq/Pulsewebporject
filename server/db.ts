@@ -29,7 +29,10 @@ export async function connectDB() {
   }
 
   try {
-    mongoClient = new MongoClient(trimmedUri);
+    mongoClient = new MongoClient(trimmedUri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
     await mongoClient.connect();
     mongoDb = mongoClient.db('pulse_db');
     isMongoConnected = true;
