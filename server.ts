@@ -31,24 +31,8 @@ interface AuthenticatedRequest extends express.Request {
 
 // Base64 helper to store raw uploads into physical files
 function saveBase64File(dataUrl: string, prefix = 'file'): string {
-  if (!dataUrl || !dataUrl.startsWith('data:')) {
-    return dataUrl; // return if already URL or plain text
-  }
-  try {
-    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return dataUrl;
-    }
-    const ext = matches[1].split('/')[1] || 'png';
-    const buffer = Buffer.from(matches[2], 'base64');
-    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
-    const filepath = path.join(UPLOADS_DIR, filename);
-    fs.writeFileSync(filepath, buffer);
-    return `/uploads/${filename}`;
-  } catch (err) {
-    console.error('Failed to save base64 file:', err);
-    return dataUrl;
-  }
+  // Statelessly preserve base64 data URL in the database to prevent ephemeral container file deletion / scale-out 404s.
+  return dataUrl;
 }
 
 // Clean up old stories (> 24 hours older)
