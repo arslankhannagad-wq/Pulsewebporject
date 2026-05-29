@@ -32,6 +32,7 @@ export async function connectDB() {
     mongoClient = new MongoClient(trimmedUri, {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
+      timeoutMS: 10000,
     });
     await mongoClient.connect();
     mongoDb = mongoClient.db('pulse_db');
@@ -242,9 +243,11 @@ class MongoCollectionHelper<T extends { id?: string; _id?: any; [key: string]: a
 }
 
 // Adapter dispatcher that decides between Mongo & Local File
+// Auto-degrades to JSON if MongoDB operations fail.
 class CollectionAdapter<T extends { id?: string; _id?: any; [key: string]: any }> implements BaseCollection<T> {
   private jsonHelper: JsonCollectionHelper<T>;
   private mongoHelper: MongoCollectionHelper<T>;
+  private mongoDegraded = false;
 
   constructor(name: string) {
     this.jsonHelper = new JsonCollectionHelper<T>(`${name}.json`);
@@ -252,34 +255,47 @@ class CollectionAdapter<T extends { id?: string; _id?: any; [key: string]: any }
   }
 
   private get activeCollection(): BaseCollection<T> {
-    if (isMongoConnected && mongoDb) {
+    if (isMongoConnected && mongoDb && !this.mongoDegraded) {
       return this.mongoHelper;
     }
     return this.jsonHelper;
   }
 
+  private async withFallback<R>(fn: (helper: BaseCollection<T>) => Promise<R>): Promise<R> {
+    if (isMongoConnected && mongoDb && !this.mongoDegraded) {
+      try {
+        return await fn(this.mongoHelper);
+      } catch (e: any) {
+        console.error('MongoDB operation failed, degrading to JSON fallback:', e.message);
+        this.mongoDegraded = true;
+        return fn(this.jsonHelper);
+      }
+    }
+    return fn(this.jsonHelper);
+  }
+
   async find(query?: any): Promise<T[]> {
-    return this.activeCollection.find(query);
+    return this.withFallback(h => h.find(query));
   }
 
   async findOne(query: any): Promise<T | null> {
-    return this.activeCollection.findOne(query);
+    return this.withFallback(h => h.findOne(query));
   }
 
   async insertOne(doc: T): Promise<T> {
-    return this.activeCollection.insertOne(doc);
+    return this.withFallback(h => h.insertOne(doc));
   }
 
   async updateOne(query: any, update: any): Promise<boolean> {
-    return this.activeCollection.updateOne(query, update);
+    return this.withFallback(h => h.updateOne(query, update));
   }
 
   async deleteOne(query: any): Promise<boolean> {
-    return this.activeCollection.deleteOne(query);
+    return this.withFallback(h => h.deleteOne(query));
   }
 
   async count(query?: any): Promise<number> {
-    return this.activeCollection.count(query);
+    return this.withFallback(h => h.count(query));
   }
 }
 

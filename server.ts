@@ -333,6 +333,11 @@ async function initServer() {
     });
   }
 
+  // Health check
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', db: db.isMongoConnected() ? 'mongodb' : 'json', time: new Date().toISOString() });
+  });
+
   // --- AUTH & USER API ROUTES ---
 
   // Register
