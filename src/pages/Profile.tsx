@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { apiFetch, isVideoUrl } from '../lib/api';
 import { User, Post } from '../types';
 import CommentsModal from '../components/CommentsModal';
-import { Settings, Grid, Bookmark, Award, UserPlus, Check, ChevronLeft, Heart, MessageCircle, Sparkles, LogOut, Edit3, Trash, Share2 } from 'lucide-react';
+import PostUploadModal from '../components/PostUploadModal';
+import { Settings, Grid, Bookmark, Award, UserPlus, Check, ChevronLeft, Heart, MessageCircle, Sparkles, LogOut, Edit3, Trash, Share2, PlusCircle } from 'lucide-react';
 
 export default function Profile() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user: currentUser, showToast, logout, refreshUser } = useAuth();
 
   const [targetUser, setTargetUser] = useState<User | null>(null);
@@ -36,6 +38,7 @@ export default function Profile() {
   const [avatarVal, setAvatarVal] = useState(''); // base64 payload
   const [savingSettings, setSavingSettings] = useState(false);
   const [postIdToDelete, setPostIdToDelete] = useState<string | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +105,27 @@ export default function Profile() {
         const selfSavedKeys = data.user.savedPosts || [];
         const filteredSaved = explorePosts.filter(p => selfSavedKeys.includes(p.id));
         setSavedPosts(filteredSaved);
+
+        const requestedPostId = searchParams.get('postId');
+        if (requestedPostId) {
+          const foundSaved = filteredSaved.find(p => p.id === requestedPostId);
+          if (foundSaved) {
+            setCommentingPost(foundSaved);
+            setIsCommentsOpen(true);
+            setActiveTab('saved');
+          }
+        }
+      }
+
+      // Auto-open requested post from query parameters if in self/target user posts
+      const requestedPostId = searchParams.get('postId');
+      if (requestedPostId) {
+        const found = data.posts.find(p => p.id === requestedPostId);
+        if (found) {
+          setCommentingPost(found);
+          setIsCommentsOpen(true);
+          setActiveTab('posts');
+        }
       }
     } catch (err: any) {
       showToast('Creator profile could not be retrieved', 'error');
@@ -183,6 +207,15 @@ export default function Profile() {
     }
   };
 
+  const updateLikesInProfile = (postId: string, newLikes: string[]) => {
+    const patcher = (p: Post) => (p.id === postId ? { ...p, likes: newLikes } : p);
+    setPosts(prev => prev.map(patcher));
+    setSavedPosts(prev => prev.map(patcher));
+    if (commentingPost && commentingPost.id === postId) {
+      setCommentingPost(prev => (prev ? { ...prev, likes: newLikes } : null));
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-zinc-500 font-mono tracking-widest text-xs select-none">
@@ -245,6 +278,13 @@ export default function Profile() {
             <div className="flex items-center gap-2">
               {isSelf ? (
                 <>
+                  <button
+                    onClick={() => setIsUploadOpen(true)}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-bold text-white cursor-pointer transition-all shadow-lg shadow-indigo-600/15"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    <span>Add Pulse</span>
+                  </button>
                   <button
                     onClick={() => setIsEditing(true)}
                     className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-semibold text-zinc-200 hover:bg-zinc-850 cursor-pointer transition-all"
@@ -546,8 +586,19 @@ export default function Profile() {
             setPosts(prev => prev.filter(p => p.id !== deletedId));
             setSavedPosts(prev => prev.filter(p => p.id !== deletedId));
           }}
+          onLikeUpdated={(postId, newLikes) => updateLikesInProfile(postId, newLikes)}
         />
       )}
+
+      {/* POST LAUNCH MODAL */}
+      <PostUploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onPostCreated={() => {
+          setIsUploadOpen(false);
+          loadProfileData();
+        }}
+      />
 
       {/* FOLLOWERS / FOLLOWING DIALOG OVERLAY */}
       {postIdToDelete && (

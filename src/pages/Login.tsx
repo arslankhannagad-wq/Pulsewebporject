@@ -59,7 +59,7 @@ export default function Login() {
                   required
                   value={usernameOrEmail}
                   onChange={e => setUsernameOrEmail(e.target.value)}
-                  placeholder="e.g. traveler_sarah"
+                  placeholder="Enter username or email"
                   className="w-full bg-zinc-900/60 border border-zinc-800/80 rounded-xl py-3 pl-11 pr-4 text-zinc-200 placeholder-zinc-600 text-xs focus:outline-none focus:border-indigo-500 focus:bg-zinc-900 transition-all"
                 />
               </div>
@@ -101,13 +101,6 @@ export default function Login() {
               <span>{loading ? 'Validating session credentials...' : 'Enter Pulse Session'}</span>
             </button>
           </form>
-
-          {/* Prompt standard login test info for faster verification during preview */}
-          <div className="mt-5 p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-[10px] text-zinc-500 text-center leading-normal">
-            <span className="font-semibold text-zinc-400 block mb-1">⚡ Instant Preview Testing Accounts:</span>
-            <span>Username: <strong className="text-indigo-450 font-mono">traveler_sarah</strong> or <strong className="text-indigo-450 font-mono">chef_marco</strong></span><br />
-            <span>Password: <strong className="text-emerald-500 font-mono">password123</strong></span>
-          </div>
 
           <div className="mt-6 text-center text-xs text-zinc-500 border-t border-zinc-900 pt-5">
             <span>New here? </span>

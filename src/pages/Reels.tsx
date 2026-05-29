@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { apiFetch } from '../lib/api';
 import { Post } from '../types';
@@ -7,6 +8,9 @@ import { Heart, MessageCircle, Send, Volume2, VolumeX, Grid, Film, Play, Pause }
 
 export default function Reels() {
   const { user, showToast } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetReelId = searchParams.get('reelId');
+
   const [reels, setReels] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -23,6 +27,17 @@ export default function Reels() {
   useEffect(() => {
     loadReels();
   }, []);
+
+  useEffect(() => {
+    if (!loading && reels.length > 0 && targetReelId) {
+      setTimeout(() => {
+        const el = document.getElementById(`reel-card-${targetReelId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 200);
+    }
+  }, [loading, reels, targetReelId]);
 
   const loadReels = async () => {
     try {
@@ -130,8 +145,8 @@ export default function Reels() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex justify-center pb-20 md:pb-0 select-none">
-      <div className="w-full max-w-sm h-screen md:pl-[272px] md:max-w-[calc(384px+272px)] reels-container relative">
+    <div className="h-[calc(100vh-120px)] md:h-screen w-full bg-black text-white flex justify-center select-none overflow-hidden">
+      <div className="w-full max-w-sm h-full md:pl-[272px] md:max-w-[calc(384px+272px)] reels-container relative overflow-y-scroll snap-y snap-mandatory no-scrollbar">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 bg-zinc-950">
             <Film className="h-8 w-8 text-indigo-500 animate-spin" />
@@ -155,7 +170,7 @@ export default function Reels() {
                 key={reel.id}
                 id={`reel-card-${reel.id}`}
                 data-reel-id={reel.id}
-                className="w-full h-full relative reel-card flex items-center justify-center bg-[#050505] overflow-hidden"
+                className="w-full h-full min-h-full flex-shrink-0 relative reel-card flex items-center justify-center bg-[#050505] overflow-hidden"
               >
                 {/* Main Video Element */}
                 <video
