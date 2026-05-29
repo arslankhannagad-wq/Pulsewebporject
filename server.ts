@@ -1343,6 +1343,80 @@ async function initServer() {
     }
   });
 
+  // Delete a specific message inside a chat
+  app.delete('/api/messages/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const messageId = req.params.id;
+      const selfId = req.user!.id;
+
+      const messageObj = await db.messages.findOne({ id: messageId });
+      if (!messageObj) {
+        res.status(404).json({ error: 'Message not found.' });
+        return;
+      }
+
+      // Ensure the user deleting is the sender of the message or is an admin
+      if (messageObj.senderId !== selfId && req.user!.role !== 'admin') {
+        res.status(403).json({ error: 'You are not authorized to delete this message.' });
+        return;
+      }
+
+      // Get the chat object to inform the other participant
+      const chatObj = await db.chats.findOne({ id: messageObj.chatId });
+
+      // Delete the message
+      await db.messages.deleteOne({ id: messageId });
+
+      // If chatObj exists, notify the other participant via socket
+      if (chatObj) {
+        const receiverId = chatObj.participants.find(p => p !== selfId);
+        if (receiverId) {
+          const receiverSocket = activeSockets.get(receiverId);
+          if (receiverSocket) {
+            io.to(receiverSocket).emit('message-deleted', { messageId, chatId: messageObj.chatId });
+          }
+        }
+      }
+
+      res.json({ success: true, messageId, chatId: messageObj.chatId });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Delete a chat conversation and all its messages
+  app.delete('/api/chats/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const chatId = req.params.id;
+      const selfId = req.user!.id;
+
+      const chatObj = await db.chats.findOne({ id: chatId });
+      if (!chatObj) {
+        res.status(404).json({ error: 'Chat conversation not found.' });
+        return;
+      }
+
+      // Ensure the user deleting is a participant of the chat
+      if (!chatObj.participants.includes(selfId)) {
+        res.status(403).json({ error: 'You are not authorized to delete this chat.' });
+        return;
+      }
+
+      // Delete the chat document
+      await db.chats.deleteOne({ id: chatId });
+
+      // Delete all messages associated with this chat
+      const msgs = await db.messages.find({ chatId });
+      for (const msg of msgs) {
+        await db.messages.deleteOne({ id: msg.id });
+      }
+
+      res.json({ success: true, message: 'Chat conversation and message history cleared.' });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // --- NOTIFICATIONS API ---
 
   // Get notifications

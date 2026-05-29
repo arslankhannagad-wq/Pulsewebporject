@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { apiFetch } from '../lib/api';
 import { Message, Chat, User } from '../types';
-import { Send, Image as ImageIcon, Smile, MessageSquare, Phone, Video, Search, ChevronLeft, ArrowDown, ShieldAlert } from 'lucide-react';
+import { Send, Image as ImageIcon, Smile, MessageSquare, Phone, Video, Search, ChevronLeft, ArrowDown, ShieldAlert, Trash } from 'lucide-react';
 
 export default function Messages() {
   const { user, socket, showToast } = useAuth();
@@ -21,6 +21,11 @@ export default function Messages() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
+
+  // Chat deletion
+  const [chatIdToDelete, setChatIdToDelete] = useState<string | null>(null);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const activeChatRef = useRef<string | null>(null);
@@ -48,6 +53,13 @@ export default function Messages() {
         loadChatRooms(); // refresh sidebar list order and unread statuses
       });
 
+      socket.on('message-deleted', ({ messageId, chatId }: any) => {
+        if (chatId === activeChatRef.current) {
+          setMessages(prev => prev.filter(m => m.id !== messageId));
+        }
+        loadChatRooms();
+      });
+
       socket.on('typing-received', ({ chatId, isTyping: isPeerTyping }: any) => {
         setPeerTyping(prev => ({
           ...prev,
@@ -59,6 +71,7 @@ export default function Messages() {
     return () => {
       if (socket) {
         socket.off('message-received');
+        socket.off('message-deleted');
         socket.off('typing-received');
       }
     };
@@ -179,6 +192,34 @@ export default function Messages() {
     }
   };
 
+  const deleteSingleMessage = async (messageId: string) => {
+    try {
+      await apiFetch(`/api/messages/${messageId}`, { method: 'DELETE' });
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      loadChatRooms();
+      showToast('Message deleted successfully', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete message', 'error');
+    }
+  };
+
+  const deleteChatConversation = async (chatId: string) => {
+    setIsDeletingChat(true);
+    try {
+      await apiFetch(`/api/chats/${chatId}`, { method: 'DELETE' });
+      showToast('Pulse secure conversation deleted successfully', 'info');
+      if (activeChatId === chatId) {
+        setActiveChatId(null);
+      }
+      setChatIdToDelete(null);
+      loadChatRooms();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete chat conversation', 'error');
+    } finally {
+      setIsDeletingChat(false);
+    }
+  };
+
   const activeChatObj = chatRooms.find(c => c.id === activeChatId);
 
   return (
@@ -228,18 +269,18 @@ export default function Messages() {
                   <div
                     key={room.id}
                     onClick={() => setActiveChatId(room.id)}
-                    className={`flex items-center justify-between p-4 cursor-pointer transition-all ${
-                      isSelected ? 'bg-zinc-900 border-l-4 border-indigo-500' : 'hover:bg-zinc-900/50'
+                    className={`flex items-center justify-between p-4 cursor-pointer transition-all group ${
+                      isSelected ? 'bg-zinc-900 border-l-4 border-indigo-505' : 'hover:bg-zinc-900/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 truncate">
-                      <div className="relative">
-                        <img src={room.recipient.avatar} alt="Recipient" className="h-10 w-10 rounded-full border border-zinc-800" />
+                      <div className="relative font-sans">
+                        <img src={room.recipient.avatar} alt="Recipient" className="h-10 w-10 rounded-full border border-zinc-800 object-cover" />
                         {room.recipient.isOnline && (
                           <span className="absolute bottom-0 right-0 h-3 w-3 bg-emerald-500 border-2 border-black rounded-full" />
                         )}
                       </div>
-                      <div className="truncate">
+                      <div className="truncate text-left font-sans">
                         <span className={`text-xs block ${isUnseen ? 'text-white font-bold' : 'text-zinc-350'}`}>
                           @{room.recipient.username}
                         </span>
@@ -249,9 +290,22 @@ export default function Messages() {
                       </div>
                     </div>
 
-                    {isUnseen && (
-                      <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isUnseen && (
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setChatIdToDelete(room.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-zinc-800 hover:text-rose-500 text-zinc-500 transition-all cursor-pointer"
+                        title="Delete Secure Feed"
+                      >
+                        <Trash className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -293,13 +347,20 @@ export default function Messages() {
                   </div>
                 </div>
 
-                {/* Call simulation icons */}
-                <div className="flex items-center gap-3 text-zinc-500">
-                  <button onClick={() => showToast('Voice call functions are simulated 📞', 'info')} className="hover:text-white p-2 text-xs">
+                {/* Call simulation icons and Delete Chat button */}
+                <div className="flex items-center gap-2.5 text-zinc-500">
+                  <button onClick={() => showToast('Voice call functions are simulated 📞', 'info')} className="hover:text-white p-2 text-xs transition-colors cursor-pointer" title="Simulate Voice Call">
                     <Phone className="h-4 w-4" />
                   </button>
-                  <button onClick={() => showToast('Video feed streaming functions are simulated 🎬', 'info')} className="hover:text-white p-2">
+                  <button onClick={() => showToast('Video feed streaming functions are simulated 🎬', 'info')} className="hover:text-white p-2 transition-colors cursor-pointer" title="Simulate Video Feed">
                     <Video className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setChatIdToDelete(activeChatId)}
+                    className="hover:text-rose-500 p-2 text-zinc-500 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Conversation"
+                  >
+                    <Trash className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -316,13 +377,33 @@ export default function Messages() {
                     const isSelf = msg.senderId === user?.id;
 
                     return (
-                      <div key={msg.id} className={`flex ${isSelf ? 'justify-end' : 'justify-start'} animate-slide-in`}>
+                      <div key={msg.id} className={`flex ${isSelf ? 'justify-end' : 'justify-start'} animate-slide-in group/msg items-center gap-2 pr-1`}>
+                        {isSelf && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteSingleMessage(msg.id);
+                            }}
+                            className="opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-lg hover:bg-zinc-900 text-zinc-500 hover:text-rose-500 transition-all cursor-pointer"
+                            title="Delete message"
+                          >
+                            <Trash className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                         <div className={`max-w-[70%] space-y-1.5 ${isSelf ? 'items-end' : 'items-start'}`}>
-                          <div className={`rounded-2xl px-4 py-3 text-xs leading-normal ${
-                            isSelf
-                              ? 'bg-indigo-650 text-white rounded-br-none shadow-xl'
-                              : 'bg-zinc-900 text-zinc-200 rounded-bl-none border border-zinc-805/80'
-                          }`}>
+                          <div 
+                            onClick={() => {
+                              if (isSelf || user?.role === 'admin') {
+                                setSelectedMessageId(selectedMessageId === msg.id ? null : msg.id);
+                              }
+                            }}
+                            className={`rounded-2xl px-4 py-3 text-xs leading-normal cursor-pointer transition-all ${
+                              isSelf
+                                ? 'bg-indigo-650 hover:bg-indigo-700 text-white rounded-br-none shadow-xl'
+                                : 'bg-zinc-900 hover:bg-zinc-850 text-zinc-200 rounded-bl-none border border-zinc-850'
+                            }`}
+                          >
                             {/* Message Image Attachment support */}
                             {msg.mediaUrl && (
                               <div className="rounded-lg overflow-hidden mb-2 max-w-sm border border-black/30">
@@ -334,7 +415,47 @@ export default function Messages() {
                           <span className="text-[8px] text-zinc-500 font-mono block px-1">
                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
+
+                          {selectedMessageId === msg.id && (
+                            <div className="flex items-center gap-2 mt-1 animate-slide-in justify-end">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSingleMessage(msg.id);
+                                  setSelectedMessageId(null);
+                                }}
+                                className="text-[10px] uppercase tracking-wider font-extrabold text-rose-500 hover:text-rose-450 bg-rose-950/20 px-2 py-1 rounded-md border border-rose-900/30 transition-all flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash className="h-3 w-3" />
+                                <span>Delete Message</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedMessageId(null);
+                                }}
+                                className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 hover:text-zinc-300 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800 transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
                         </div>
+                        {!isSelf && user?.role === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteSingleMessage(msg.id);
+                            }}
+                            className="opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-lg hover:bg-zinc-900 text-zinc-500 hover:text-rose-500 transition-all cursor-pointer"
+                            title="Delete message (Admin)"
+                          >
+                            <Trash className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     );
                   })
@@ -468,6 +589,39 @@ export default function Messages() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM DELETE CONVERSATION OVERLAY */}
+      {chatIdToDelete && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in text-center">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mx-auto mb-1">
+              <Trash className="h-5 w-5" />
+            </div>
+            <h3 className="text-zinc-100 font-bold text-sm">Delete Secure Feed</h3>
+            <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed">
+              Are you sure you want to clear your message logs and delete this secure feed? This action is irreversible.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                type="button"
+                onClick={() => setChatIdToDelete(null)}
+                disabled={isDeletingChat}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-zinc-900 hover:bg-zinc-850 text-zinc-300 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteChatConversation(chatIdToDelete)}
+                disabled={isDeletingChat}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingChat ? 'Clearing...' : 'Continue'}
+              </button>
             </div>
           </div>
         </div>
