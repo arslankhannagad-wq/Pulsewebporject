@@ -8,12 +8,31 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Simple per-file mutex to prevent concurrent read-modify-write race conditions
+const writeLocks = new Map<string, Promise<void>>();
+
+async function withFileLock<T>(filePath: string, fn: () => Promise<T>): Promise<T> {
+  while (writeLocks.has(filePath)) {
+    await writeLocks.get(filePath);
+  }
+  const lockPromise = (async () => {
+    try {
+      return await fn();
+    } finally {
+      writeLocks.delete(filePath);
+    }
+  })();
+  writeLocks.set(filePath, lockPromise.then(() => {}));
+  return lockPromise;
+}
+
 // Check MongoDB URI
 const mongoUri = process.env.MONGODB_URI;
 let mongoClient: MongoClient | null = null;
 let mongoDb: Db | null = null;
 
 let isMongoConnected = false;
+let mongoReconnectTimer: ReturnType<typeof setInterval> | null = null;
 
 export async function connectDB() {
   if (!mongoUri || !mongoUri.trim()) {
@@ -28,8 +47,16 @@ export async function connectDB() {
     return;
   }
 
+  await tryConnectMongo(trimmedUri);
+  startMongoWatch(trimmedUri);
+}
+
+async function tryConnectMongo(uri: string) {
   try {
-    mongoClient = new MongoClient(trimmedUri, {
+    if (mongoClient) {
+      try { await mongoClient.close(); } catch {}
+    }
+    mongoClient = new MongoClient(uri, {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
       timeoutMS: 10000,
@@ -37,11 +64,31 @@ export async function connectDB() {
     await mongoClient.connect();
     mongoDb = mongoClient.db('pulse_db');
     isMongoConnected = true;
+    resetAllDegradations();
     console.log('Successfully connected to MongoDB Atlas!');
   } catch (error) {
-    console.error('Error connecting to MongoDB Atlas:', error);
+    isMongoConnected = false;
+    mongoDb = null;
+    console.error('Error connecting to MongoDB Atlas:', (error as Error).message);
     console.log('Falling back to local file JSON database.');
   }
+}
+
+function startMongoWatch(uri: string) {
+  if (mongoReconnectTimer) clearInterval(mongoReconnectTimer);
+  mongoReconnectTimer = setInterval(async () => {
+    if (isMongoConnected) {
+      try {
+        await mongoDb?.admin().ping();
+      } catch {
+        console.log('MongoDB connection lost. Attempting reconnect...');
+        isMongoConnected = false;
+        await tryConnectMongo(uri);
+      }
+    } else {
+      await tryConnectMongo(uri);
+    }
+  }, 30000);
 }
 
 // Interface representing standard collection operations
@@ -101,62 +148,67 @@ class JsonCollectionHelper<T extends { id?: string; _id?: any; [key: string]: an
   }
 
   async insertOne(doc: T): Promise<T> {
-    const data = this.read();
-    if (!doc.id && !doc._id) {
-      doc.id = Math.random().toString(36).substring(2, 11);
-    }
-    data.push(doc);
-    this.write(data);
-    return doc;
+    return withFileLock(this.filePath, async () => {
+      const data = this.read();
+      if (!doc.id && !doc._id) {
+        (doc as any).id = Math.random().toString(36).substring(2, 11);
+      }
+      data.push(doc);
+      this.write(data);
+      return doc;
+    });
   }
 
   async updateOne(query: any, update: any): Promise<boolean> {
-    const data = this.read();
-    let updated = false;
-    const itemIndex = data.findIndex(item => {
-      for (const key in query) {
-        if (item[key] !== query[key]) return false;
-      }
-      return true;
-    });
+    return withFileLock(this.filePath, async () => {
+      const data = this.read();
+      let updated = false;
+      const itemIndex = data.findIndex(item => {
+        for (const key in query) {
+          if (item[key] !== query[key]) return false;
+        }
+        return true;
+      });
 
-    if (itemIndex > -1) {
-      const item = data[itemIndex] as any;
-      // Handlers for MongoDB update operators like $set, $push, $pull
-      if (update.$set) {
-        Object.assign(item, update.$set);
-      } else if (update.$push) {
-        for (const key in update.$push) {
-          if (!Array.isArray(item[key])) item[key] = [];
-          item[key].push(update.$push[key]);
-        }
-      } else if (update.$pull) {
-        for (const key in update.$pull) {
-          if (Array.isArray(item[key])) {
-            item[key] = item[key].filter((val: any) => val !== update.$pull[key]);
+      if (itemIndex > -1) {
+        const item = data[itemIndex] as any;
+        if (update.$set) {
+          Object.assign(item, update.$set);
+        } else if (update.$push) {
+          for (const key in update.$push) {
+            if (!Array.isArray(item[key])) item[key] = [];
+            item[key].push(update.$push[key]);
           }
+        } else if (update.$pull) {
+          for (const key in update.$pull) {
+            if (Array.isArray(item[key])) {
+              item[key] = item[key].filter((val: any) => val !== update.$pull[key]);
+            }
+          }
+        } else {
+          Object.assign(item, update);
         }
-      } else {
-        Object.assign(item, update);
+        data[itemIndex] = item;
+        this.write(data);
+        updated = true;
       }
-      data[itemIndex] = item;
-      this.write(data);
-      updated = true;
-    }
-    return updated;
+      return updated;
+    });
   }
 
   async deleteOne(query: any): Promise<boolean> {
-    const data = this.read();
-    const initialLength = data.length;
-    const filtered = data.filter(item => {
-      for (const key in query) {
-        if (item[key] !== query[key]) return true;
-      }
-      return false;
+    return withFileLock(this.filePath, async () => {
+      const data = this.read();
+      const initialLength = data.length;
+      const filtered = data.filter(item => {
+        for (const key in query) {
+          if (item[key] !== query[key]) return true;
+        }
+        return false;
+      });
+      this.write(filtered);
+      return filtered.length < initialLength;
     });
-    this.write(filtered);
-    return filtered.length < initialLength;
   }
 
   async count(query: any = {}): Promise<number> {
@@ -297,16 +349,33 @@ class CollectionAdapter<T extends { id?: string; _id?: any; [key: string]: any }
   async count(query?: any): Promise<number> {
     return this.withFallback(h => h.count(query));
   }
+
+  resetDegradation() {
+    this.mongoDegraded = false;
+  }
+}
+
+const dbAdapters: CollectionAdapter<any>[] = [];
+
+function createAdapter<T extends { id?: string; _id?: any; [key: string]: any }>(name: string) {
+  const adapter = new CollectionAdapter<T>(name);
+  dbAdapters.push(adapter);
+  return adapter;
+}
+
+function resetAllDegradations() {
+  for (const a of dbAdapters) a.resetDegradation();
 }
 
 // Database exports
 export const db = {
-  users: new CollectionAdapter<User>('users'),
-  posts: new CollectionAdapter<Post>('posts'),
-  comments: new CollectionAdapter<Comment>('comments'),
-  stories: new CollectionAdapter<Story>('stories'),
-  chats: new CollectionAdapter<Chat>('chats'),
-  messages: new CollectionAdapter<Message>('messages'),
-  notifications: new CollectionAdapter<Notification>('notifications'),
+  users: createAdapter<User>('users'),
+  posts: createAdapter<Post>('posts'),
+  comments: createAdapter<Comment>('comments'),
+  stories: createAdapter<Story>('stories'),
+  chats: createAdapter<Chat>('chats'),
+  messages: createAdapter<Message>('messages'),
+  notifications: createAdapter<Notification>('notifications'),
   isMongoConnected: () => isMongoConnected,
+  resetDegradations: resetAllDegradations,
 };
